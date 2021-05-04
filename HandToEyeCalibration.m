@@ -4,26 +4,25 @@
 
 %% Checkerboard Calibration for Camera to End Effector
 function [cameraParams, tr_cam_endeff, ARTagPoses] = HandToEyeCalibration()
-imageFolder = './CalibrationImages';
+clear all
+
+% setting the folder the images are in
+imageFolder = './testCalibrationImages';
 
 % Square Size is the size of each square on the checkerboard in mm
-squareSize = 20;
+squareSize = 30;
 % converting square size to m
 squareSize = squareSize/1000;
 
-% get the calibration images
-filePattern = fullfile(imageFolder, '*.png');
-calibImages = dir(filePattern);
-for i = length(calibImages)
-    baseFileName = calibImages(k).name;
-    fullFileName = fullfile(myFolder, baseFileName);
-    imageArray = imread(fullFileName);
-    imShow(imageArray);
-    drawnow;
+% get the file path for the calibration images
+imageArray = dir(imageFolder);
+imageArray = {imageArray(~[imageArray.isdir]).name};
+for i = 1:length(imageArray)
+    imageArray{i} = [imageFolder filesep imageArray{i}];
 end
 
 % find checkerboard points
-[points, boardSize, imagesUsed] = detectCheckerboardPoints(calibImages);
+[points, boardSize, imagesUsed] = detectCheckerboardPoints(imageArray);
 if(imagesUsed == 0)
     error("No calibration images are found in the folder ./Calibration Images");
 end
@@ -32,7 +31,7 @@ end
 worldPoints = generateCheckerboardPoints(boardSize, squareSize);
 
 % find camera parameters
-cameraParams = estimateCameraParameters(points, worldPoints, 'WorldUnits', m, 'NumRadialDistortionCoefficients', 2, ...
+cameraParams = estimateCameraParameters(points, worldPoints, 'WorldUnits', 'm', 'NumRadialDistortionCoefficients', 2, ...
     'EstimateTangentialDistortion', true);
 %% Hand to Eye Transformations
 
