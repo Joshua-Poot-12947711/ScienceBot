@@ -3,11 +3,11 @@
 %for the objects being retrieved/places to put the object
 
 %% Checkerboard Calibration for Camera to End Effector
-function [cameraParams, tr_cam_endeff, ARTagPoses] = HandToEyeCalibration()
+function [cameraParams, tr_cam_endeff, ARTagPoses] = HandToEyeCalibration(dobotM)
 clear all
 
-% setting the folder the images are in
-imageFolder = './testCalibrationImages';
+% setting the folder the images are in. Make sure the current folder in matlab is the folder before the folder below.
+imageFolder = './CalibrationImages';
 
 % Square Size is the size of each square on the checkerboard in mm
 squareSize = 30;
@@ -24,7 +24,7 @@ end
 % find checkerboard points
 [points, boardSize, imagesUsed] = detectCheckerboardPoints(imageArray);
 if(imagesUsed == 0)
-    error("No calibration images are found in the folder ./Calibration Images");
+    error("No calibration images are found in the folder CalibrationImages");
 end
 
 % generate an ideal checkerboard to compare calibration images with
@@ -34,12 +34,6 @@ worldPoints = generateCheckerboardPoints(boardSize, squareSize);
 cameraParams = estimateCameraParameters(points, worldPoints, 'WorldUnits', 'm', 'NumRadialDistortionCoefficients', 2, ...
     'EstimateTangentialDistortion', true);
 %% Hand to Eye Transformations
-
-L1 = Link('d',0,'a',0,'alpha',pi/2,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
-L2 = Link('d',0,'a',0.16828,'alpha',0,'offset',0,'qlim',[deg2rad(0),deg2rad(85)]);
-L3 = Link('d',0,'a',0.190,'alpha',0,'offset',0,'qlim',[deg2rad(-10),deg2rad(95)]);
-L4 = Link('d',0,'a',0.03343,'alpha',pi/2,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
-dobot = SerialLink([L1 L2 L3 L4], 'name', 'dobotMagician');
 
 %get joint information form dobot subscriber here
 dobotSub = rossubscriber('/dobot_magician/joint_states');
@@ -65,9 +59,9 @@ rot_cam_dobotBase = quat2rotm(tagMsg.Markers[0].Pose.Pose.Orientation.W, ...
 tr_cam_dobotBase = rt2tr(rot_cam_dobotBase, trans_cam_dobotBase);
 tr_cam_dobotBase = tr_cam_dobotBase*transl(offset(1), offset(2), 0);
 
-dobot.base = tr_cam_dobotBase;
+dobotM.model.base = tr_cam_dobotBase;
 
-tr_cam_endeff = dobot.fkine(currentJointState);
+tr_cam_endeff = dobotM.model.fkine(currentJointState);
 % Transform for Camera to Object - assuming 1 is object AR Tag
 % cell array for ar tag transforms 
 ARTagPoses = cell(size(tagMsg.markers,2),1);

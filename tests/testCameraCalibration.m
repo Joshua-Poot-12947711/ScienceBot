@@ -1,8 +1,8 @@
 % Test Script for image calibration
 clear all
-
+clc
 % setting the folder the images are in
-imageFolder = './testCalibrationImages';
+imageFolder = './tests\testCalibrationImages';
 
 % Square Size is the size of each square on the checkerboard in mm
 squareSize = 30;
