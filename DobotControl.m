@@ -22,17 +22,49 @@ classdef DobotControl < handle
         %% EStop
         function EStopDobot(self)
             self.dobot.EStopRobot();
-            fprintf('COOL');
         end
         
         %% Cartesian Based Jogging
-        function JogDobotCartesian(self, direction)
-
+        function JogDobotCartesian(self, axis, direction, distance)
+            
+            currentEndEffector = self.dobot.GetCurrentEndEffectorState();
+            endEffectorRotation = [0,0,0];
+            
+            if direction == 'Neg'
+                distance = distance * -1;
+            end
+            
+            switch axis
+                case 'X'
+                    targetEndEffector = currentEndEffector + [distance, 0, 0];
+                case 'Y'
+                    targetEndEffector = currentEndEffector + [0, distance, 0];
+                case 'Z'
+                    targetEndEffector = currentEndEffector + [0, 0, distance];
+            end
+            
+            self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
         end
         
         %% Joint Based Jogging
-        function JogDobotJoint(self, direction)
+        function JogDobotJoint(self, joint, direction, distance)
             
+            currentJointState = self.dobot.GetCurrentJointState();
+            
+            if direction == 'Neg'
+                distance = distance * -1;
+            end
+            
+            switch joint
+                case '1'
+                    targetJointState =currentJointState + [distance, 0, 0, 0];
+                case '2'
+                    targetJointState = currentEndEffector + [0, distance, 0, 0];
+                case '3'
+                    targetJointState = currentEndEffector + [0, 0, distance, 0];
+                case '4'
+                    targetJointState = currentEndEffector + [0, 0, 0, distance];
+            end
         end
         
         function outputArg = method1(obj,inputArg)
