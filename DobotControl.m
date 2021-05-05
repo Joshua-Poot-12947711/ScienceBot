@@ -4,10 +4,18 @@ classdef DobotControl < handle
     
     properties
         dobot;
+        rack1 = [0, 0, 0, 0, 0, 0];
+        rack2 = [0, 0, 0, 0, 0, 0];
         
     end
     
     methods
+        %% To Add
+        % Current End Effector Pose on GUI
+        % Joint limits
+        % Rack Arrangement
+        
+        
         %% Constructor
         function self = DobotControl()
             self.dobot = DobotMagician();
@@ -37,12 +45,14 @@ classdef DobotControl < handle
             switch axis
                 case 'X'
                     targetEndEffector = currentEndEffector + [distance, 0, 0];
+                    disp(targetEndEffector);
                 case 'Y'
                     targetEndEffector = currentEndEffector + [0, distance, 0];
                 case 'Z'
                     targetEndEffector = currentEndEffector + [0, 0, distance];
             end
             
+            disp(targetEndEffector);
             self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
         end
         
@@ -57,7 +67,7 @@ classdef DobotControl < handle
             
             switch joint
                 case '1'
-                    targetJointState =currentJointState + [distance, 0, 0, 0];
+                    targetJointState = currentJointState + [distance, 0, 0, 0];
                 case '2'
                     targetJointState = currentEndEffector + [0, distance, 0, 0];
                 case '3'
@@ -65,8 +75,28 @@ classdef DobotControl < handle
                 case '4'
                     targetJointState = currentEndEffector + [0, 0, 0, distance];
             end
+            
+            disp(targetJointState);
+            self.dobot.PublishTargetJoint(targetJointState);
         end
         
+        %% Set Rack State
+        function SetRackState(self, rack, position, state)
+            
+            switch rack
+                case '1'
+                    rack1[position - 1] = state;
+                case '2'
+                    rack2[position - 1] = state;
+            end
+        end
+            
+        %% Get Rack State
+        function rackState = GetRackState(self)
+            rackState =  [self.rack1, self.rack2];
+        end
+        
+        %%
         function outputArg = method1(obj,inputArg)
             %METHOD1 Summary of this method goes here
             %   Detailed explanation goes here
