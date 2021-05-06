@@ -107,6 +107,22 @@ classdef DobotMagician < handle
             jointStates = latestJointStateMsg.Position;
        end
        
+       function EndEffectorState = GetCurrentEndEffectorState(self)
+            currentEndEffectorPoseMsg = self.endEffectorStateSub.LatestMessage;
+            
+            %disp(currentEndEffectorPoseMsg);
+            
+            %disp(currentEndEffectorPoseMsg.Pose.Position.X);
+            %disp(currentEndEffectorPoseMsg.Pose.Position.Y);
+            %disp(currentEndEffectorPoseMsg.Pose.Position.Z);
+            
+            currentEndEffectorPosition = [currentEndEffectorPoseMsg.Pose.Position.X,
+                              currentEndEffectorPoseMsg.Pose.Position.Y,
+                              currentEndEffectorPoseMsg.Pose.Position.Z];
+                          
+                          EndEffectorState = currentEndEffectorPosition;
+       end
+       
        function SetRobotOnRail(self,status)
            self.railStatusMsg.Data = status;
            send(self.railStatusPub,self.railStatusMsg);

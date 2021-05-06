@@ -20,6 +20,8 @@ classdef DobotControl < handle
         function self = DobotControl()
             self.dobot = DobotMagician();
             
+            disp('ROBOT CREATED');
+            
         end
         
         %% Home
@@ -37,29 +39,31 @@ classdef DobotControl < handle
             
             currentEndEffector = self.dobot.GetCurrentEndEffectorState();
             endEffectorRotation = [0,0,0];
+
+            targetEndEffector = currentEndEffector;
             
             if direction == 'Neg'
                 distance = distance * -1;
             end
-            
+                        
             switch axis
                 case 'X'
-                    targetEndEffector = currentEndEffector + [distance, 0, 0];
-                    disp(targetEndEffector);
+                    targetEndEffector(1) = targetEndEffector(1) + distance;
                 case 'Y'
-                    targetEndEffector = currentEndEffector + [0, distance, 0];
+                    targetEndEffector(2) = targetEndEffector(2) + distance;
                 case 'Z'
-                    targetEndEffector = currentEndEffector + [0, 0, distance];
+                    targetEndEffector(3) = targetEndEffector(3) + distance;
             end
             
-            disp(targetEndEffector);
             self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
+            
         end
         
         %% Joint Based Jogging
         function JogDobotJoint(self, joint, direction, distance)
             
             currentJointState = self.dobot.GetCurrentJointState();
+            targetJointState = currentJointState;
             
             if direction == 'Neg'
                 distance = distance * -1;
@@ -67,16 +71,15 @@ classdef DobotControl < handle
             
             switch joint
                 case '1'
-                    targetJointState = currentJointState + [distance, 0, 0, 0];
+                    targetJointState(1) = currentJointState(1) + distance;
                 case '2'
-                    targetJointState = currentEndEffector + [0, distance, 0, 0];
+                    targetJointState(2) = currentJointState(2) + distance;
                 case '3'
-                    targetJointState = currentEndEffector + [0, 0, distance, 0];
+                    targetJointState(3) = currentJointState(3) + distance;
                 case '4'
-                    targetJointState = currentEndEffector + [0, 0, 0, distance];
+                    targetJointState(4) = currentJointState(4) + distance;
             end
             
-            disp(targetJointState);
             self.dobot.PublishTargetJoint(targetJointState);
         end
         
@@ -85,9 +88,9 @@ classdef DobotControl < handle
             
             switch rack
                 case '1'
-                    rack1[position - 1] = state;
+                    rack1(position - 1) = state;
                 case '2'
-                    rack2[position - 1] = state;
+                    rack2(position - 1) = state;
             end
         end
             
