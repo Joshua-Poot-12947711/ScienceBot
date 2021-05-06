@@ -6,6 +6,9 @@ classdef dobotMagician < handle
         %> Workspace
         workspace = [-2 2 -2 2 -2 2];   
         
+        %> Link Lengths, change last length if a end effector is added
+        armLengths = [0.135, 0.147, 0];
+        
         %> Flag to indicate if gripper is used
         useGripper = false;        
     end
@@ -41,6 +44,15 @@ function GetDoBotRobot(self)
     L3 = Link('d',0,'a',0.190,'alpha',0,'offset',0,'qlim',[deg2rad(-10),deg2rad(95)]);
     L4 = Link('d',0,'a',0.03343,'alpha',pi/2,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
     self.model = SerialLink([L1 L2 L3 L4], 'name', 'dobotMagician');
+end
+%% Dobot Manual Fkine
+function translation = DobotFkine(q)
+    
+    x = self.armLengths(1)*cos(q(1))*cos(q(2))+self.armLengths(2)*cos(q(1))*cos(q(1)+q(2));
+    y = self.armLengths(1)*sin(q(1))*sin(q(2))+self.armLengths(2)*sin(q(1))*sin(q(1)+q(2));
+    z = self.armLengths(1)*sin(q(1)) + self.armLengths(2)*sin(q(2)+q(3))-length(3);
+    
+    translation = [x, y, z];
 end
     end
 end
