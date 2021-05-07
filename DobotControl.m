@@ -11,7 +11,6 @@ classdef DobotControl < handle
     
     methods
         %% To Add
-        % Current End Effector Pose on GUI
         % Joint limits
         % Rack Arrangement
         
@@ -21,7 +20,6 @@ classdef DobotControl < handle
             self.dobot = DobotMagician();
             
             disp('ROBOT CREATED');
-            
         end
         
         %% Home
@@ -81,6 +79,16 @@ classdef DobotControl < handle
             end
             
             self.dobot.PublishTargetJoint(targetJointState);
+        end
+        
+        %% Get End Effector Position and Joint States
+        
+        function endEffectorAndJointStates = GetEndEffectorAndJointStates()
+            
+            currentEndEffector = self.dobot.GetCurrentEndEffectorState();
+            currentJointState = self.dobot.GetCurrentJointState();
+            
+            endEffectorAndJointStates = [currentEndEffector, currentJointState];
         end
         
         %% Set Rack State
