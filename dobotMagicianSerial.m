@@ -40,9 +40,9 @@ function GetDoBotRobot(self)
     %     end
     
     L1 = Link('d',0,'a',0,'alpha',pi/2,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
-    L2 = Link('d',0,'a',0.16828,'alpha',0,'offset',0,'qlim',[deg2rad(0),deg2rad(85)]);
-    L3 = Link('d',0,'a',0.190,'alpha',0,'offset',0,'qlim',[deg2rad(-10),deg2rad(95)]);
-    L4 = Link('d',0,'a',0.03343,'alpha',pi/2,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
+    L2 = Link('d',0,'a',0.135,'alpha',0,'offset',0,'qlim',[deg2rad(0),deg2rad(85)]);
+    L3 = Link('d',0,'a',0.147,'alpha',0,'offset',0,'qlim',[deg2rad(-10),deg2rad(95)]);
+    L4 = Link('d',0,'a',0,'alpha',pi/2,'offset',0,'qlim',[deg2rad(-90),deg2rad(90)]);
     self.model = SerialLink([L1 L2 L3 L4], 'name', 'dobotMagician');
 end
 %% Dobot Manual Fkine
