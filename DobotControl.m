@@ -7,12 +7,17 @@ classdef DobotControl < handle
         rack1 = [0, 0, 0, 0, 0, 0];
         rack2 = [0, 0, 0, 0, 0, 0];
         
+        origin = [0, 0, 0];
+        
+        rack1Pos = [origin, origin, origin, origin, origin, origin]; 
+        rack2Pos = [origin, origin, origin, origin, origin, origin]; 
+        
     end
     
     methods
         %% To Add
-        % Joint limits
-        % Rack Arrangement
+        % Joint limits and position check function
+        % Calibrate Racks
         
         
         %% Constructor
@@ -57,6 +62,20 @@ classdef DobotControl < handle
             
         end
         
+        %% Check Position is within Robot Limits
+        function achievable = CheckWithinLimit(self, cartesianPosition)
+            
+            achievable = 1;
+            
+        end
+        
+        %% Check Current Position of Dobot with Goal Position
+        function achieved = CheckCurrentPosition(self, cartesianPosition)
+            
+            achieved = 1;
+            
+        end
+        
         %% Joint Based Jogging
         function JogDobotJoint(self, joint, direction, distance)
             
@@ -82,7 +101,6 @@ classdef DobotControl < handle
         end
         
         %% Get End Effector Position and Joint States
-        
         function endEffectorAndJointStates = GetEndEffectorAndJointStates()
             
             currentEndEffector = self.dobot.GetCurrentEndEffectorState();
@@ -107,12 +125,85 @@ classdef DobotControl < handle
             rackState =  [self.rack1, self.rack2];
         end
         
-        %%
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
+        %% Move Test Tube
+        function PeformTestTubeMove(self, fromRack, fromRackPos, toRack, toRackPose)
+            
+            liftOffset = [0, 0, 0.1];
+            endEffectorRotation = [0,0,0];
+            
+            % Move to Test Tube position
+            switch fromRack
+                case '1'
+                    targetEndEffector = self.rack1Pos(fromRackPos);
+                case '2'
+                    targetEndEffector = self.rack2Pos(fromRackPos);
+            end
+            
+            if self.CheckWithinLimit(targetEndEffector) != 1
+                return;
+            end
+            
+            endEffectorRotation = [0,0,0];
+            self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
+            
+            while CheckCurrentPosition(targetEndEffector) != 1
+            end
+            
+            % Gripper
+            self.dobot.PublishToolState(true);
+            
+            % Lift up
+            self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation);
+            
+            while CheckCurrentPosition(targetEndEffector) != 1
+            end
+            
+            % Move to Drop position
+            switch toRack
+                case '1'
+                    targetEndEffector = self.rack1Pos(toRackPos);
+                case '2'
+                    targetEndEffector = self.rack2Pos(toRackPos);
+            end
+            
+            if self.CheckWithinLimit(targetEndEffector) != 1
+                return;
+            end
+            
+            self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation);
+            
+            while CheckCurrentPosition(targetEndEffector) != 1
+            end
+            
+            % Move down
+            self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
+            
+            while CheckCurrentPosition(targetEndEffector) != 1
+            end
+            
+            % Release Gripper
+            self.dobot.PublishToolState(false);
+            
         end
+        
+        %% Calibrates Tube Positions
+        function CalibrateTestTubePositions(self)
+            
+            for i = 1 : size(rackPos)
+                
+            end
+            
+        end
+        
+        %% Function
+%         %% Function
+%         function outputArg = method1(obj,inputArg)
+%             %METHOD1 Summary of this method goes here
+%             %   Detailed explanation goes here
+%             outputArg = obj.Property1 + inputArg;
+%         end
+        
+        
     end
 end
 
