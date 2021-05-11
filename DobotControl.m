@@ -9,15 +9,19 @@ classdef DobotControl < handle
         
         origin = [0, 0, 0];
         
-        rack1Pos = [origin, origin, origin, origin, origin, origin]; 
-        rack2Pos = [origin, origin, origin, origin, origin, origin]; 
+        rack1Pos = [origin, origin, origin, origin, origin, origin];
+        rack2Pos = [origin, origin, origin, origin, origin, origin];
         
     end
     
     methods
         %% To Add
-        % Joint limits and position check function
+        % Joint limits function?
+        % Test position check function
+        % Test moving tube function // hard code rack position
         % Calibrate Racks
+        
+        % Update Driver for gripper bug
         
         
         %% Constructor
@@ -37,18 +41,23 @@ classdef DobotControl < handle
             self.dobot.EStopRobot();
         end
         
+        %% EStop
+        function ResumeDobot(self)
+            self.dobot.ResumeRobot();
+        end
+        
         %% Cartesian Based Jogging
         function JogDobotCartesian(self, axis, direction, distance)
             
             currentEndEffector = self.dobot.GetCurrentEndEffectorState();
             endEffectorRotation = [0,0,0];
-
+            
             targetEndEffector = currentEndEffector;
             
             if direction == 'Neg'
                 distance = distance * -1;
             end
-                        
+            
             switch axis
                 case 'X'
                     targetEndEffector(1) = targetEndEffector(1) + distance;
@@ -67,6 +76,9 @@ classdef DobotControl < handle
             
             achievable = 1;
             
+            % Find maximum extension of arm? Check if point is within
+            % radius?
+            
         end
         
         %% Check Current Position of Dobot with Goal Position
@@ -74,6 +86,13 @@ classdef DobotControl < handle
             
             achieved = 1;
             
+%             currentEndEffector = self.dobot.GetCurrentEndEffectorState();
+%             
+%             dis = norm(currentEndEffector - cartesianPosition);
+%             
+%             if dis <= 0.1
+%             achieved = 1;
+%             end
         end
         
         %% Joint Based Jogging
@@ -119,7 +138,7 @@ classdef DobotControl < handle
                     rack2(position - 1) = state;
             end
         end
-            
+        
         %% Get Rack State
         function rackState = GetRackState(self)
             rackState =  [self.rack1, self.rack2];
@@ -196,12 +215,12 @@ classdef DobotControl < handle
         end
         
         %% Function
-%         %% Function
-%         function outputArg = method1(obj,inputArg)
-%             %METHOD1 Summary of this method goes here
-%             %   Detailed explanation goes here
-%             outputArg = obj.Property1 + inputArg;
-%         end
+        %         %% Function
+        %         function outputArg = method1(obj,inputArg)
+        %             %METHOD1 Summary of this method goes here
+        %             %   Detailed explanation goes here
+        %             outputArg = obj.Property1 + inputArg;
+        %         end
         
         
     end
