@@ -101,6 +101,11 @@ classdef DobotMagician < handle
             self.safetyStateMsg.Data = 3; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
             send(self.safetyStatePub,self.safetyStateMsg);
        end
+       
+       function ResumeRobot(self)
+            self.safetyStateMsg.Data = 4; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
+            send(self.safetyStatePub,self.safetyStateMsg);
+       end
 
        function jointStates = GetCurrentJointState(self)
             latestJointStateMsg = self.jointStateSub.LatestMessage;
@@ -108,19 +113,13 @@ classdef DobotMagician < handle
        end
        
        function EndEffectorState = GetCurrentEndEffectorState(self)
-            currentEndEffectorPoseMsg = self.endEffectorStateSub.LatestMessage;
-            
-            %disp(currentEndEffectorPoseMsg);
-            
-            %disp(currentEndEffectorPoseMsg.Pose.Position.X);
-            %disp(currentEndEffectorPoseMsg.Pose.Position.Y);
-            %disp(currentEndEffectorPoseMsg.Pose.Position.Z);
-            
-            currentEndEffectorPosition = [currentEndEffectorPoseMsg.Pose.Position.X,
-                              currentEndEffectorPoseMsg.Pose.Position.Y,
-                              currentEndEffectorPoseMsg.Pose.Position.Z];
-                          
-                          EndEffectorState = currentEndEffectorPosition;
+           currentEndEffectorPoseMsg = self.endEffectorStateSub.LatestMessage;
+           
+           currentEndEffectorPosition = [currentEndEffectorPoseMsg.Pose.Position.X,
+               currentEndEffectorPoseMsg.Pose.Position.Y,
+               currentEndEffectorPoseMsg.Pose.Position.Z];
+           
+           EndEffectorState = currentEndEffectorPosition;
        end
        
        function SetRobotOnRail(self,status)
