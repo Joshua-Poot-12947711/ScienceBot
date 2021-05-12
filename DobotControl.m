@@ -9,8 +9,12 @@ classdef DobotControl < handle
         
         origin = [0, 0, 0];
         
-        rack1Pos = [origin, origin, origin, origin, origin, origin];
-        rack2Pos = [origin, origin, origin, origin, origin, origin];
+        rack1Pos = {[0.15, 0.06, 0.03], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]};
+        rack1Pos1 = [0.15, 0.06, 0.03];
+        rack2Pos1 = [0.15, -0.06, 0.03];
+        rack2Pos = {[0.15, -0.06, 0.03], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]};
+        
+        gripper = false;
         
     end
     
@@ -21,7 +25,7 @@ classdef DobotControl < handle
         % Test moving tube function // hard code rack position
         % Calibrate Racks
         
-        % Update Driver for gripper bug
+        % Position is printing in radians & rounding wrong
         
         
         %% Constructor
@@ -41,9 +45,23 @@ classdef DobotControl < handle
             self.dobot.EStopRobot();
         end
         
-        %% EStop
+        %% Resume
         function ResumeDobot(self)
             self.dobot.ResumeRobot();
+        end
+        
+                %% Gripper
+        function OpenGripperDobot(self)
+            
+            self.dobot.PublishToolState(true);
+            
+        end
+        
+                        %% Gripper
+        function CloseGripperDobot(self)
+            
+            self.dobot.PublishToolState(false);
+            
         end
         
         %% Cartesian Based Jogging
@@ -69,6 +87,14 @@ classdef DobotControl < handle
             
             self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
             
+            
+            state = 0;
+            
+            while state == 0
+                state = self.CheckCurrentPosition(targetEndEffector);
+                pause(0.3);
+            end
+            
         end
         
         %% Check Position is within Robot Limits
@@ -84,15 +110,19 @@ classdef DobotControl < handle
         %% Check Current Position of Dobot with Goal Position
         function achieved = CheckCurrentPosition(self, cartesianPosition)
             
-            achieved = 1;
             
-%             currentEndEffector = self.dobot.GetCurrentEndEffectorState();
-%             
-%             dis = norm(currentEndEffector - cartesianPosition);
-%             
-%             if dis <= 0.1
-%             achieved = 1;
-%             end
+            
+            currentEndEffector = self.dobot.GetCurrentEndEffectorState();
+            
+             dis = sqrt((currentEndEffector(1) - cartesianPosition(1))^2 + (currentEndEffector(2) - cartesianPosition(2))^2 + (currentEndEffector(3) - cartesianPosition(3))^2)
+             %norm(currentEndEffector - cartesianPosition)
+             
+             if dis <= 0.005
+             achieved = 1
+             return
+             end
+             
+             achieved = 0 
         end
         
         %% Joint Based Jogging
@@ -119,13 +149,20 @@ classdef DobotControl < handle
             self.dobot.PublishTargetJoint(targetJointState);
         end
         
-        %% Get End Effector Position and Joint States
-        function endEffectorAndJointStates = GetEndEffectorAndJointStates()
+        %% Get End Effector Position (Cartesian) and Joint States
+        function endEffector = GetEndEffectorPosition(self)
             
             currentEndEffector = self.dobot.GetCurrentEndEffectorState();
+            
+            endEffector = currentEndEffector;
+        end
+        
+        %% Get End Effector Position (Cartesian) and Joint States
+        function jointStates = GetJointStates(self)
+            
             currentJointState = self.dobot.GetCurrentJointState();
             
-            endEffectorAndJointStates = [currentEndEffector, currentJointState];
+            jointStates = currentJointState;
         end
         
         %% Set Rack State
@@ -153,20 +190,26 @@ classdef DobotControl < handle
             % Move to Test Tube position
             switch fromRack
                 case '1'
-                    targetEndEffector = self.rack1Pos(fromRackPos);
+                    %targetEndEffector = self.rack1Pos(fromRackPos);
+                    targetEndEffector = self.rack1Pos1;
                 case '2'
                     targetEndEffector = self.rack2Pos(fromRackPos);
             end
             
-            if self.CheckWithinLimit(targetEndEffector) != 1
-                return;
-            end
+            %if self.CheckWithinLimit(targetEndEffector) ~= 1
+            %    return;
+            %end
             
             endEffectorRotation = [0,0,0];
-            self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
             
-            while CheckCurrentPosition(targetEndEffector) != 1
+            state = 0;
+            
+            while state == 0
+                self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation)
+                state = self.CheckCurrentPosition(targetEndEffector);
+                pause(0.3);
             end
+            
             
             % Gripper
             self.dobot.PublishToolState(true);
@@ -174,7 +217,13 @@ classdef DobotControl < handle
             % Lift up
             self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation);
             
-            while CheckCurrentPosition(targetEndEffector) != 1
+            state = 0;
+            
+            while state == 0
+                % Lift up
+                self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation);
+                state = self.CheckCurrentPosition(targetEndEffector);
+                pause(0.3);
             end
             
             % Move to Drop position
@@ -182,22 +231,33 @@ classdef DobotControl < handle
                 case '1'
                     targetEndEffector = self.rack1Pos(toRackPos);
                 case '2'
-                    targetEndEffector = self.rack2Pos(toRackPos);
+                    %targetEndEffector = self.rack2Pos(toRackPos);
+                    targetEndEffector = self.rack2Pos1;
             end
             
-            if self.CheckWithinLimit(targetEndEffector) != 1
-                return;
+            %if self.CheckWithinLimit(targetEndEffector) ~= 1
+            %    return;
+            %end
+            
+            
+            disp('Stoppy');
+            state = 0;
+            
+            while state == 0
+                self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation)
+                state = self.CheckCurrentPosition(targetEndEffector);
+                pause(0.3);
             end
-            
-            self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation);
-            
-            while CheckCurrentPosition(targetEndEffector) != 1
-            end
-            
+                        
             % Move down
-            self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
             
-            while CheckCurrentPosition(targetEndEffector) != 1
+            disp('Downy');
+            state = 0;
+            
+            while state == 0
+                self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
+                state = self.CheckCurrentPosition(targetEndEffector);
+                pause(0.3);
             end
             
             % Release Gripper
@@ -208,9 +268,8 @@ classdef DobotControl < handle
         %% Calibrates Tube Positions
         function CalibrateTestTubePositions(self)
             
-            for i = 1 : size(rackPos)
-                
-            end
+            rack1Pos(1) = [0.15, 0.06, 0.03];
+            rack2Pos(1) = [0.15, -0.06, 0.03];
             
         end
         
