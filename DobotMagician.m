@@ -91,6 +91,11 @@ classdef DobotMagician < handle
            self.toolStateMsg.Data = state;
            send(self.toolStatePub,self.toolStateMsg);
        end
+       
+       function PublishGripperState(self, state, enable)
+           self.toolStateMsg.Data = [state, enable];
+           send(self.toolStatePub,self.toolStateMsg);
+       end
 
        function InitaliseRobot(self)
             self.safetyStateMsg.Data = 2; %% Refer to the Dobot Documentation(WIP) - 2 is defined as INITIALISATION 
@@ -98,7 +103,7 @@ classdef DobotMagician < handle
        end
 
        function EStopRobot(self)
-            self.safetyStateMsg.Data = 3; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
+            self.safetyStateMsg.Data = 5; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
             send(self.safetyStatePub,self.safetyStateMsg);
        end
        

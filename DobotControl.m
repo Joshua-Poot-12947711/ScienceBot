@@ -4,10 +4,7 @@ classdef DobotControl < handle
     
     properties
         dobot;
-        rack1 = [0, 0, 0, 0, 0, 0];
-        rack2 = [0, 0, 0, 0, 0, 0];
-        
-        origin = [0, 0, 0];
+        rackState = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         
         rack1Pos = {[0.15, 0.06, 0.03], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]};
         rack1Pos1 = [0.15, 0.06, 0.03];
@@ -20,19 +17,18 @@ classdef DobotControl < handle
     
     methods
         %% To Add
-        % Joint limits function?
-        % Test position check function
+
         % Test moving tube function // hard code rack position
         % Calibrate Racks
         
-        % Position is printing in radians & rounding wrong
-        
+        % Test move to functions
+        % Test rack state functions
+        % Test Estop
+        % TEST GRIPPER
         
         %% Constructor
         function self = DobotControl()
             self.dobot = DobotMagician();
-            
-            disp('ROBOT CREATED');
         end
         
         %% Home
@@ -50,27 +46,20 @@ classdef DobotControl < handle
             self.dobot.ResumeRobot();
         end
         
-                %% Gripper
+        %% Gripper
         function OpenGripperDobot(self)
-            
-            self.dobot.PublishToolState(true);
-            
+            self.dobot.PublishGripperState(true, true);
         end
         
-                        %% Gripper
+        %% Gripper
         function CloseGripperDobot(self)
-            
-            self.dobot.PublishToolState(false);
-            
+            self.dobot.PublishGripperState(true, false);
         end
         
         %% Cartesian Based Jogging
         function JogDobotCartesian(self, axis, direction, distance)
             
-            currentEndEffector = self.dobot.GetCurrentEndEffectorState();
-            endEffectorRotation = [0,0,0];
-            
-            targetEndEffector = currentEndEffector;
+            targetEndEffector = self.dobot.GetCurrentEndEffectorState();
             
             if direction == 'Neg'
                 distance = distance * -1;
@@ -85,46 +74,9 @@ classdef DobotControl < handle
                     targetEndEffector(3) = targetEndEffector(3) + distance;
             end
             
-            self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
-            
-            
-            state = 0;
-            
-            while state == 0
-                state = self.CheckCurrentPosition(targetEndEffector);
-                pause(0.3);
-            end
-            
+            self.MoveToCartesianPoint(targetEndEffector);
         end
-        
-        %% Check Position is within Robot Limits
-        function achievable = CheckWithinLimit(self, cartesianPosition)
-            
-            achievable = 1;
-            
-            % Find maximum extension of arm? Check if point is within
-            % radius?
-            
-        end
-        
-        %% Check Current Position of Dobot with Goal Position
-        function achieved = CheckCurrentPosition(self, cartesianPosition)
-            
-            
-            
-            currentEndEffector = self.dobot.GetCurrentEndEffectorState();
-            
-             dis = sqrt((currentEndEffector(1) - cartesianPosition(1))^2 + (currentEndEffector(2) - cartesianPosition(2))^2 + (currentEndEffector(3) - cartesianPosition(3))^2)
-             %norm(currentEndEffector - cartesianPosition)
-             
-             if dis <= 0.005
-             achieved = 1
-             return
-             end
-             
-             achieved = 0 
-        end
-        
+       
         %% Joint Based Jogging
         function JogDobotJoint(self, joint, direction, distance)
             
@@ -146,46 +98,93 @@ classdef DobotControl < handle
                     targetJointState(4) = currentJointState(4) + distance;
             end
             
-            self.dobot.PublishTargetJoint(targetJointState);
+            state = 0;
+            while state == 0
+                self.dobot.PublishTargetJoint(targetJointState);
+                state = self.CheckCurrentPosition(targetEndEffector);
+                pause(0.3);
+            end
+        end
+      
+        %% Move to Cartesian Point
+        function MoveToCartesianPoint(self, targetEndEffector)
+            
+            state = 0;
+            endEffectorRotation = [0,0,0];
+            
+            while state == 0
+                self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
+                currentEndEffector = self.dobot.GetCurrentEndEffectorState();
+                
+                dis = sqrt((currentEndEffector(1) - cartesianPosition(1))^2 + (currentEndEffector(2) - cartesianPosition(2))^2 + (currentEndEffector(3) - cartesianPosition(3))^2);
+                
+                if dis <= 0.005
+                    state = 1;
+                end
+                
+                pause(0.3);
+            end
         end
         
-        %% Get End Effector Position (Cartesian) and Joint States
+        %% Move to Joint State
+        function MoveToJointState(self, targetJointState)
+            
+            state = 0;
+            
+            while state == 0
+                self.dobot.PublishTargetJoint(targetJointState);
+                currentJointState = self.dobot.GetJointStates();
+                
+                dif1 = abs(targetJointState(1) - currentJointState(1));
+                dif2 = abs(targetJointState(2) - currentJointState(2));
+                dif3 = abs(targetJointState(3) - currentJointState(3));
+                dif4 = abs(targetJointState(4) - currentJointState(4));
+                
+                if dif1 <= 0.1
+                    if dif2 <= 0.1
+                        if dif3 <= 0.1
+                            if dif4 <= 0.1
+                                state = 1;
+                            end
+                        end
+                    end
+                end
+                
+                pause(0.3);
+            end
+        end
+        
+        %% Get End Effector Position (Cartesian)
         function endEffector = GetEndEffectorPosition(self)
-            
             currentEndEffector = self.dobot.GetCurrentEndEffectorState();
-            
             endEffector = currentEndEffector;
         end
         
-        %% Get End Effector Position (Cartesian) and Joint States
+        %% Get Joint States
         function jointStates = GetJointStates(self)
-            
             currentJointState = self.dobot.GetCurrentJointState();
-            
             jointStates = currentJointState;
         end
         
         %% Set Rack State
         function SetRackState(self, rack, position, state)
-            
             switch rack
                 case '1'
-                    rack1(position - 1) = state;
+                    rackState(position - 1) = state;
                 case '2'
-                    rack2(position - 1) = state;
+                    rackState(6 + position - 1) = state;
             end
         end
         
         %% Get Rack State
         function rackState = GetRackState(self)
-            rackState =  [self.rack1, self.rack2];
+            rackState =  self.rackState;
         end
         
         %% Move Test Tube
         function PeformTestTubeMove(self, fromRack, fromRackPos, toRack, toRackPose)
             
             liftOffset = [0, 0, 0.1];
-            endEffectorRotation = [0,0,0];
             
             % Move to Test Tube position
             switch fromRack
@@ -196,35 +195,13 @@ classdef DobotControl < handle
                     targetEndEffector = self.rack2Pos(fromRackPos);
             end
             
-            %if self.CheckWithinLimit(targetEndEffector) ~= 1
-            %    return;
-            %end
-            
-            endEffectorRotation = [0,0,0];
-            
-            state = 0;
-            
-            while state == 0
-                self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation)
-                state = self.CheckCurrentPosition(targetEndEffector);
-                pause(0.3);
-            end
-            
+            self.MoveToCartesianPoint(targetEndEffector);
             
             % Gripper
             self.dobot.PublishToolState(true);
             
-            % Lift up
-            self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation);
-            
-            state = 0;
-            
-            while state == 0
-                % Lift up
-                self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation);
-                state = self.CheckCurrentPosition(targetEndEffector);
-                pause(0.3);
-            end
+            % Lift
+            self.MoveToCartesianPoint(targetEndEffector + liftOffset);
             
             % Move to Drop position
             switch toRack
@@ -235,30 +212,10 @@ classdef DobotControl < handle
                     targetEndEffector = self.rack2Pos1;
             end
             
-            %if self.CheckWithinLimit(targetEndEffector) ~= 1
-            %    return;
-            %end
+            self.MoveToCartesianPoint(targetEndEffector + liftOffset);
             
-            
-            disp('Stoppy');
-            state = 0;
-            
-            while state == 0
-                self.dobot.PublishEndEffectorPose(targetEndEffector + liftOffset, endEffectorRotation)
-                state = self.CheckCurrentPosition(targetEndEffector);
-                pause(0.3);
-            end
-                        
             % Move down
-            
-            disp('Downy');
-            state = 0;
-            
-            while state == 0
-                self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
-                state = self.CheckCurrentPosition(targetEndEffector);
-                pause(0.3);
-            end
+            self.MoveToCartesianPoint(targetEndEffector);
             
             % Release Gripper
             self.dobot.PublishToolState(false);
