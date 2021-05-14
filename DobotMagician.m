@@ -93,7 +93,7 @@ classdef DobotMagician < handle
        end
        
        function PublishGripperState(self, state, enable)
-           self.toolStateMsg.Data = [state, enable];
+           self.toolStateMsg.Data = [state enable];
            send(self.toolStatePub,self.toolStateMsg);
        end
 

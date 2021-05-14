@@ -6,12 +6,8 @@ classdef DobotControl < handle
         dobot;
         rackState = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         
-        rack1Pos = {[0.15, 0.06, 0.03], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]};
-        rack1Pos1 = [0.15, 0.06, 0.03];
-        rack2Pos1 = [0.15, -0.06, 0.03];
-        rack2Pos = {[0.15, -0.06, 0.03], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]};
-        
-        gripper = false;
+        rack1Pos = {[0.14, 0.13, 0.07], [0.14, 0.104, 0.07], [0.14, 0.075, 0.07], [0.14, 0.055, 0.07], [0.14, 0.035, 0.07], [0.14, 0.015, 0.07]};
+        rack2Pos = {[0.14, -0.005, 0.07], [0.14, -0.025, 0.07], [0.14, -0.045, 0.07], [0.14, -0.064, 0.07], [0.14, -0.09, 0.07], [0.14, -0.12, 0.07]};
         
     end
     
@@ -20,11 +16,10 @@ classdef DobotControl < handle
 
         % Test moving tube function // hard code rack position
         % Calibrate Racks
-        
-        % Test move to functions
-        % Test rack state functions
+
         % Test Estop
-        % TEST GRIPPER
+        
+        % Clear target point????
         
         %% Constructor
         function self = DobotControl()
@@ -48,12 +43,17 @@ classdef DobotControl < handle
         
         %% Gripper
         function OpenGripperDobot(self)
-            self.dobot.PublishGripperState(true, true);
+            self.dobot.PublishGripperState(1, 0);
         end
         
         %% Gripper
         function CloseGripperDobot(self)
-            self.dobot.PublishGripperState(true, false);
+            self.dobot.PublishGripperState(1, 1);
+        end
+        
+        %% Compressor Off
+        function CompressorOff(self)
+            self.dobot.PublishGripperState(0, 0);
         end
         
         %% Cartesian Based Jogging
@@ -98,12 +98,7 @@ classdef DobotControl < handle
                     targetJointState(4) = currentJointState(4) + distance;
             end
             
-            state = 0;
-            while state == 0
-                self.dobot.PublishTargetJoint(targetJointState);
-                state = self.CheckCurrentPosition(targetEndEffector);
-                pause(0.3);
-            end
+            self.MoveToJointState(targetJointState);
         end
       
         %% Move to Cartesian Point
@@ -116,7 +111,7 @@ classdef DobotControl < handle
                 self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
                 currentEndEffector = self.dobot.GetCurrentEndEffectorState();
                 
-                dis = sqrt((currentEndEffector(1) - cartesianPosition(1))^2 + (currentEndEffector(2) - cartesianPosition(2))^2 + (currentEndEffector(3) - cartesianPosition(3))^2);
+                dis = sqrt((currentEndEffector(1) - targetEndEffector(1))^2 + (currentEndEffector(2) - targetEndEffector(2))^2 + (currentEndEffector(3) - targetEndEffector(3))^2);
                 
                 if dis <= 0.005
                     state = 1;
@@ -133,7 +128,7 @@ classdef DobotControl < handle
             
             while state == 0
                 self.dobot.PublishTargetJoint(targetJointState);
-                currentJointState = self.dobot.GetJointStates();
+                currentJointState = self.dobot.GetCurrentJointState();
                 
                 dif1 = abs(targetJointState(1) - currentJointState(1));
                 dif2 = abs(targetJointState(2) - currentJointState(2));
@@ -170,9 +165,9 @@ classdef DobotControl < handle
         function SetRackState(self, rack, position, state)
             switch rack
                 case '1'
-                    rackState(position - 1) = state;
+                    self.rackState(position) = state;
                 case '2'
-                    rackState(6 + position - 1) = state;
+                    self.rackState(6 + position) = state;
             end
         end
         
@@ -182,43 +177,62 @@ classdef DobotControl < handle
         end
         
         %% Move Test Tube
-        function PeformTestTubeMove(self, fromRack, fromRackPos, toRack, toRackPose)
+        function PeformTestTubeMove(self, fromRack, fromRackPos, toRack, toRackPos)
             
-            liftOffset = [0, 0, 0.1];
+            liftOffset = [0, 0, 0.08];
+            transportOffset = [0.03, 0, 0];
+            
+            self.OpenGripperDobot();
             
             % Move to Test Tube position
+            disp('Moving to tube.');
             switch fromRack
                 case '1'
-                    %targetEndEffector = self.rack1Pos(fromRackPos);
-                    targetEndEffector = self.rack1Pos1;
+                    targetEndEffector = self.rack1Pos{fromRackPos};
                 case '2'
-                    targetEndEffector = self.rack2Pos(fromRackPos);
-            end
-            
-            self.MoveToCartesianPoint(targetEndEffector);
-            
-            % Gripper
-            self.dobot.PublishToolState(true);
-            
-            % Lift
-            self.MoveToCartesianPoint(targetEndEffector + liftOffset);
-            
-            % Move to Drop position
-            switch toRack
-                case '1'
-                    targetEndEffector = self.rack1Pos(toRackPos);
-                case '2'
-                    %targetEndEffector = self.rack2Pos(toRackPos);
-                    targetEndEffector = self.rack2Pos1;
+                    targetEndEffector = self.rack2Pos{fromRackPos};
             end
             
             self.MoveToCartesianPoint(targetEndEffector + liftOffset);
             
             % Move down
+            disp('Moving down.');
+            self.MoveToCartesianPoint(targetEndEffector);
+            
+            
+            % Gripper
+            disp('Gripping.');
+            self.CloseGripperDobot();
+            pause(1);
+            
+            % Lift
+            disp('Lifting.');
+            self.MoveToCartesianPoint(targetEndEffector + liftOffset);
+            
+            % Move out
+            self.MoveToCartesianPoint(targetEndEffector + liftOffset + transportOffset);
+            
+            % Move to Drop position
+            disp('Moving to drop position.');
+            switch toRack
+                case '1'
+                    targetEndEffector = self.rack1Pos{toRackPos};
+                case '2'
+                    targetEndEffector = self.rack2Pos{toRackPos};
+            end
+            
+            self.MoveToCartesianPoint(targetEndEffector + liftOffset + transportOffset);
+            
+            % Move in
+            self.MoveToCartesianPoint(targetEndEffector + liftOffset);
+            
+            % Move down
+            disp('Moving down.');
             self.MoveToCartesianPoint(targetEndEffector);
             
             % Release Gripper
-            self.dobot.PublishToolState(false);
+            disp('Releasing tube.');
+            self.OpenGripperDobot();
             
         end
         
