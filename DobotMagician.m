@@ -32,6 +32,8 @@ classdef DobotMagician < handle
         
        eMotorPub;
        eMotorMsg;
+       
+       safetyStatusSubscriber;
    end
    
    properties(Access = private)
@@ -56,6 +58,7 @@ classdef DobotMagician < handle
           
           [self.toolStatePub, self.toolStateMsg] = rospublisher('/dobot_magician/target_tool_state');
           [self.safetyStatePub,self.safetyStateMsg] = rospublisher('/dobot_magician/target_safety_status');
+          self.safetyStatusSubscriber = rossubscriber('/dobot_magician/safety_status');
           
           [self.railStatusPub, self.railStatusMsg] = rospublisher('/dobot_magician/target_rail_status');
           [self.railPosPub,self.railPosMsg] = rospublisher('/dobot_magician/target_rail_position');
@@ -105,6 +108,10 @@ classdef DobotMagician < handle
        function EStopRobot(self)
             self.safetyStateMsg.Data = 5; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
             send(self.safetyStatePub,self.safetyStateMsg);
+       end
+       
+       function currentSafetyStatus = GetSafetyStatus(self)
+           currentSafetyStatus = self.safetyStatusSubscriber.LatestMessage.Data;
        end
        
        function ResumeRobot(self)
