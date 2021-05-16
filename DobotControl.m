@@ -291,8 +291,8 @@ classdef DobotControl < handle
                 'EstimateTangentialDistortion', true);
             %% Getting AR Tag poses and put them into class variables
             %get ar tag information from ar_track_alvar_msgs/AlvarMarkers
-            ARTagSub = rossubscriber('/tags','/geometry_msgs/PoseArray');
-            tagMsg = recieve(ARTagSub);
+            ARTagSub = rossubscriber('/tags','geometry_msgs/PoseArray');
+            tagMsg = receive(ARTagSub);
             transEndEff = self.dobot.GetCurrentEndEffectorState();
             
             trEndEff = eye(4);
@@ -302,41 +302,73 @@ classdef DobotControl < handle
             
             % Transform for Camera to AR Tag at base - assuming 0 is the base AR Tag
             %offset of the tag to the base in m
-            offset = [0.1, 0.1];
+            offset = [0.1, 0.1, 0.1];
             
-            transCamDobotBase = [tagMsg.Poses(1).Pose.Pose.Position.X, tagMsg.Poses(1).Pose.Pose.Position.Y,...
-                tagMsg.Poses(1).Pose.Pose.Position.Z]
-            rotCamDobotBase = quat2rotm(tagMsg.Poses(1).Pose.Pose.Orientation.W, ...
-                tagMsg.Poses(1).Pose.Pose.Orientation.X, ...
-                tagMsg.Poses(1).Pose.Pose.Orientation.Y, ...
-                tagMsg.Poses(1).Pose.Pose.Orientation.Z);
+            transCamDobotBase = [tagMsg.Poses(1).Position.X, tagMsg.Poses(1).Position.Y,...
+                tagMsg.Poses(1).Position.Z]
+            rotCamDobotBase = quat2rotm([tagMsg.Poses(1).Orientation.W, ...
+                tagMsg.Poses(1).Orientation.X, ...
+                tagMsg.Poses(1).Orientation.Y, ...
+                tagMsg.Poses(1).Orientation.Z]);
             
-            trCamDobotBase = rt2tr(rotCamDobotBase, transCamDobotBase);
-            trCamEndEff = trCamDobotBase + trEndEff;
+            trCamDobotBase = rt2tr(rotCamDobotBase, transCamDobotBase');
+            trCamEndEff = trCamDobotBase * trEndEff;
             
             % Transform for Camera to Object - assuming 1 is object AR Tag
             % cell array for ar tag transforms
-            ARTagPoses = cell(size(tagMsg.markers,2),1);
+            ARTagPoses = cell(size(tagMsg.Poses,2),1);
             for i = 2:1:size(tagMsg.Poses)
-                trans_cam_object = [tagMsg.Poses(i).Pose.Pose.Position.X, tagMsg.Poses(i).Pose.Pose.Position.Y,...
-                    tagMsg.Poses(i).Pose.Pose.Position.Z]
-                rot_cam_object = quat2rotm(tagMsg.Poses(i).Pose.Pose.Orientation.W, ...
-                    tagMsg.Poses(i).Pose.Pose.Orientation.X, ...
-                    tagMsg.Poses(i).Pose.Pose.Orientation.Y, ...
-                    tagMsg.Poses(i).Pose.Pose.Orientation.Z);
-                ARTagPoses{i} = rt2tr(rot_cam_object, trans_cam_object);
+                trans_cam_object = [tagMsg.Poses(i).Position.X, tagMsg.Poses(i).Position.Y,...
+                    tagMsg.Poses(i).Position.Z]
+                rot_cam_object = quat2rotm([tagMsg.Poses(i).Orientation.W, ...
+                    tagMsg.Poses(i).Orientation.X, ...
+                    tagMsg.Poses(i).Orientation.Y, ...
+                    tagMsg.Poses(i).Orientation.Z]);
+                ARTagPoses{i} = rt2tr(rot_cam_object, trans_cam_object');
             end
             
             % Calculate transforms relative to the robot end eff.
             % Rack 1 is tag 1->6, Rack 2 is tag 7->12
-            for i = 1:1:6
-                relativeTr = inv(ARTagPoses{i})*trCamEndEff;
-                self.rack1Pos{i} = [relativeTr(13), relativeTr(14), relativeTr(15)];
+            %for i = 1:1:6
+            %    relativeTr = inv(ARTagPoses{i})*trCamEndEff;
+            %   self.rack1Pos{i} = [relativeTr(13), relativeTr(14), relativeTr(15)];
+            %end
+            %for i = 7:1:12
+            %    relativeTr = inv(ARTagPoses{i})*trCamEndEff;
+            %    self.rack2Pos{i} = [relativeTr(13), relativeTr(14), relativeTr(15)];
+            %end
+            
+            %new function based on two ar tags on the end of the test tube
+            %rack
+            
+            %distance from the tag to the first test tube
+            offset = 0.1;
+            
+            %poses of the two tags
+            tag1 = ARTagPoses{2};
+            tag2 = ARTagPoses{3};
+            
+            %spacing between test tubes
+            xDiff = (tag1(1,4) - tag2(1,4))/12
+            yDiff = (tag1(2,4) - tag2(2,4))/12
+            
+            z = 0.07;
+            
+            for i = 1:1:12
+                if i < 7
+                    x = tag1(1,4) + xDiff*i;
+                    y = tag1(2,4) + yDiff*i;
+                    self.rack1Pos{i} = [x, y, z]
+                else
+                    x = tag1(1,4) + xDiff*i;
+                    y = tag1(2,4) + yDiff*i;
+                    self.rack2Pos{i} = [x, y, z]
+                end
             end
-            for i = 7:1:12
-                relativeTr = inv(ARTagPoses{i})*trCamEndEff;
-                self.rack2Pos{i} = [relativeTr(13), relativeTr(14), relativeTr(15)];
-            end
+                    
+            
+            
+    
         end
         
         %% Function
