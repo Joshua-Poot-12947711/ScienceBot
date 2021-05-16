@@ -32,12 +32,15 @@ classdef DobotMagician < handle
         
        eMotorPub;
        eMotorMsg;
+       
+       safetyStatusSubscriber;
    end
    
    properties(Access = private)
    end
    
    methods(Access = public)
+       %%
        function self = DobotMagician()
            % Initialise subs and pubs as object starts
 
@@ -55,7 +58,10 @@ classdef DobotMagician < handle
           [self.targetEndEffectorPub,self.targetEndEffectorMsg] = rospublisher('/dobot_magician/target_end_effector_pose');
           
           [self.toolStatePub, self.toolStateMsg] = rospublisher('/dobot_magician/target_tool_state');
+          self.toolStateSubscriber = rossubscriber('/dobot_magician/tool_state');
+          
           [self.safetyStatePub,self.safetyStateMsg] = rospublisher('/dobot_magician/target_safety_status');
+          self.safetyStatusSubscriber = rossubscriber('/dobot_magician/safety_status');
           
           [self.railStatusPub, self.railStatusMsg] = rospublisher('/dobot_magician/target_rail_status');
           [self.railPosPub,self.railPosMsg] = rospublisher('/dobot_magician/target_rail_position');
@@ -65,6 +71,7 @@ classdef DobotMagician < handle
           [self.eMotorPub,self.eMotorMsg] = rospublisher('/dobot_magician/target_e_motor_state');
        end
        
+       %%
        function PublishTargetJoint(self, jointTarget)
            trajectoryPoint = rosmessage("trajectory_msgs/JointTrajectoryPoint");
            trajectoryPoint.Positions = jointTarget;
@@ -73,6 +80,7 @@ classdef DobotMagician < handle
            send(self.targetJointTrajPub,self.targetJointTrajMsg);
        end
        
+       %%
        function PublishEndEffectorPose(self,pose,rotation)
            self.targetEndEffectorMsg.Position.X = pose(1);
            self.targetEndEffectorMsg.Position.Y = pose(2);
@@ -87,31 +95,53 @@ classdef DobotMagician < handle
            send(self.targetEndEffectorPub,self.targetEndEffectorMsg);
        end
        
+       %%
        function PublishToolState(self,state)
            self.toolStateMsg.Data = state;
            send(self.toolStatePub,self.toolStateMsg);
        end
+       
+       %%
+       function PublishGripperState(self, state, enable)
+           self.toolStateMsg.Data = [state enable];
+           send(self.toolStatePub,self.toolStateMsg);
+       end
 
+       %%
        function InitaliseRobot(self)
             self.safetyStateMsg.Data = 2; %% Refer to the Dobot Documentation(WIP) - 2 is defined as INITIALISATION 
             send(self.safetyStatePub,self.safetyStateMsg);
        end
 
+       %%
        function EStopRobot(self)
-            self.safetyStateMsg.Data = 3; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
+            self.safetyStateMsg.Data = 5; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
             send(self.safetyStatePub,self.safetyStateMsg);
        end
        
+       %%
+       function currentSafetyStatus = GetSafetyStatus(self)
+           currentSafetyStatus = self.safetyStatusSubscriber.LatestMessage.Data;
+       end
+       
+       %%
+       function compressorState = GetCompressorState(self)
+           compressorState = self.toolStateSubscriber.LatestMessage.Data;
+       end
+       
+       %%
        function ResumeRobot(self)
             self.safetyStateMsg.Data = 4; %% Refer to the Dobot Documentation(WIP) - 3 is defined as ESTOP 
             send(self.safetyStatePub,self.safetyStateMsg);
        end
 
+       %%
        function jointStates = GetCurrentJointState(self)
             latestJointStateMsg = self.jointStateSub.LatestMessage;
             jointStates = latestJointStateMsg.Position;
        end
        
+       %%
        function EndEffectorState = GetCurrentEndEffectorState(self)
            currentEndEffectorPoseMsg = self.endEffectorStateSub.LatestMessage;
            
@@ -122,16 +152,19 @@ classdef DobotMagician < handle
            EndEffectorState = currentEndEffectorPosition;
        end
        
+       %%
        function SetRobotOnRail(self,status)
            self.railStatusMsg.Data = status;
            send(self.railStatusPub,self.railStatusMsg);
        end
        
+       %%
        function MoveRailToPosition(self,position)
            self.railPosMsg.Data = position;
            send(self.railPosPub,self.railPosMsg);
        end
        
+       %%
        function [ioMux, ioData] = GetCurrentIOStatus(self)
            latestIODataMsg = self.ioStatusSub.LatestMessage;
            ioStatus = latestIODataMsg.Data;
@@ -139,11 +172,13 @@ classdef DobotMagician < handle
            ioData = ioStatus(23:42);
        end
        
+       %%
        function SetIOData(self,address,ioMux,data)
            self.ioDataMsg.Data = [address,ioMux,data];
            send(self.ioDataPub,self.ioDataMsg);
        end
 
+       %%
        function SetConveyorBeltVelocity(self,enabled,velocity)
             self.eMotorMsg.Data = [enabled,velocity];
             send(self.eMotorPub,self.eMotorMsg);
