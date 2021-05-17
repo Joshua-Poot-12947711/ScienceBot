@@ -11,6 +11,7 @@ classdef DobotControl < handle
         
         eStopped = 0;
         resumed = 1;
+        joyStick = 0;
     end
     
     methods
@@ -19,10 +20,7 @@ classdef DobotControl < handle
         
         % Add resume to Estop
         % Rack update ting
-        % Test compressor brr
-        
-        % Work out which buttons
-        
+        % Test compressor brr      
         
         %% Constructor
         function self = DobotControl()
@@ -57,7 +55,19 @@ classdef DobotControl < handle
         function CompressorOff(self)
             disp(self.dobot.GetCompressorState());
             
-            self.dobot.PublishGripperState(0, 0);
+            if self.dobot.GetCompressorState() == 1
+               self.dobot.PublishGripperState(0, 0);
+            end
+        end
+        
+        %%
+        function OpenGripperDobot(self)
+            self.dobot.PublishGripperState(1, 0);
+        end
+        
+        %%
+        function CloseGripperDobot(self)
+            self.dobot.PublishGripperState(1, 1);
         end
         
         %% Cartesian Based Jogging
@@ -108,28 +118,31 @@ classdef DobotControl < handle
         %% Joy Stick Based Jogging
         function JogJoyStick(self)
             
-            joy = vrjoystick(1);
+            id = 1;
+            joy = vrjoystick(id);
             joy_info = caps(joy);
-            timeIncrement = 0.05;
-            maxSpeed = 0.05;
-
-            while(1)
+            timeIncrement = 0.2;
+            maxSpeed = 0.01
+            
+            while(self.joyStick == 1)
                 [axes, buttons, povs] = read(joy);
                 
-                xJValue = axes(i);
-                yJValue = axes(i);
-                zJValue = buttons(i);
+                xJValue = (axes(2) * -1) * maxSpeed;
+                yJValue = axes(1) * maxSpeed;
+                zJValue = (axes(5) * -1) * maxSpeed;
                 
                 endEffector = self.GetEndEffectorPosition;
                 
-                targetEndEffector(1) = endEffector(1) + (xJValue * timeIncrement);
-                targetEndEffector(2) = endEffector(2) + (yJValue * timeIncrement);
-                targetEndEffector(3) = endEffector(3) + (zJValue * timeIncrement);
+                targetEndEffector(1) = endEffector(1) + xJValue;
+                targetEndEffector(2) = endEffector(2) + yJValue;
+                targetEndEffector(3) = endEffector(3) + zJValue;
+                
+                disp(targetEndEffector);
                 
                 self.MoveToCartesianPoint(targetEndEffector);
                 
                 pause(timeIncrement);
-                
+
             end
         end
         
@@ -137,6 +150,8 @@ classdef DobotControl < handle
         function MoveToCartesianPoint(self, targetEndEffector)
             
             state = 0;
+            counter = 0;
+            pastEndEffectors{};
             endEffectorRotation = [0,0,0];
             
             while state == 0
@@ -148,6 +163,8 @@ classdef DobotControl < handle
                 
                 if self.eStopped == 0 %&& self.resumed == 1
                     currentEndEffector = self.dobot.GetCurrentEndEffectorState();
+                    pastEndEffectors{length(pastEndEffectors) + 1} = currentEndEffector;
+                    
                     self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
                     
                     dis = sqrt((currentEndEffector(1) - targetEndEffector(1))^2 + (currentEndEffector(2) - targetEndEffector(2))^2 + (currentEndEffector(3) - targetEndEffector(3))^2);
@@ -155,6 +172,8 @@ classdef DobotControl < handle
                     if dis <= 0.005
                         state = 1;
                     end
+                    
+                    if 
                     
                     pause(0.3);
                 end
@@ -201,6 +220,17 @@ classdef DobotControl < handle
         function jointStates = GetJointStates(self)
             currentJointState = self.dobot.GetCurrentJointState();
             jointStates = currentJointState;
+        end
+        
+        %% Set Joy Stick Mode
+        function SetJoyStick(self, state)
+            self.joyStick = state;
+            
+            disp(self.joyStick);
+            
+            if self.joyStick == 1
+                self.JogJoyStick();
+            end
         end
         
         %% Set Rack State
