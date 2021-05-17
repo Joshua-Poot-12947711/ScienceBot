@@ -282,69 +282,69 @@ classdef DobotControl < handle
         function CalibrateTestTubePositions(self)
             %% Calibrating the camera
             % setting the folder the images are in. Make sure the current folder in matlab is the folder before the folder below.
-            imageFolder = './CalibrationImages';
+            %imageFolder = './CalibrationImages';
             
             % Square Size is the size of each square on the checkerboard in mm
-            squareSize = 30;
+            %squareSize = 30;
             % converting square size to m
-            squareSize = squareSize/1000;
+            %squareSize = squareSize/1000;
             
             % get the file path for the calibration images
-            imageArray = dir(imageFolder);
-            imageArray = {imageArray(~[imageArray.isdir]).name};
-            for i = 1:length(imageArray)
-                imageArray{i} = [imageFolder filesep imageArray{i}];
-            end
+            %imageArray = dir(imageFolder);
+            %imageArray = {imageArray(~[imageArray.isdir]).name};
+            %for i = 1:length(imageArray)
+            %    imageArray{i} = [imageFolder filesep imageArray{i}];
+            %end
             
             % find checkerboard points
-            [points, boardSize, imagesUsed] = detectCheckerboardPoints(imageArray);
-            if(imagesUsed == 0)
-                error("No calibration images are found in the folder CalibrationImages");
-            end
+            %[points, boardSize, imagesUsed] = detectCheckerboardPoints(imageArray);
+            %if(imagesUsed == 0)
+            %    error("No calibration images are found in the folder CalibrationImages");
+            %end
             
             % generate an ideal checkerboard to compare calibration images with
-            worldPoints = generateCheckerboardPoints(boardSize, squareSize);
+            %worldPoints = generateCheckerboardPoints(boardSize, squareSize);
             
             % find camera parameters
-            cameraParams = estimateCameraParameters(points, worldPoints, 'WorldUnits', 'm', 'NumRadialDistortionCoefficients', 2, ...
-                'EstimateTangentialDistortion', true);
+            %cameraParams = estimateCameraParameters(points, worldPoints, 'WorldUnits', 'm', 'NumRadialDistortionCoefficients', 2, ...
+            %    'EstimateTangentialDistortion', true);
             %% Getting AR Tag poses and put them into class variables
             %get ar tag information from ar_track_alvar_msgs/AlvarMarkers
-            ARTagSub = rossubscriber('/tags','geometry_msgs/PoseArray');
-            tagMsg = receive(ARTagSub);
-            transEndEff = self.dobot.GetCurrentEndEffectorState();
+            %ARTagSub = rossubscriber('/tags','geometry_msgs/PoseArray');
+            %tagMsg = receive(ARTagSub);
+            %transEndEff = self.dobot.GetCurrentEndEffectorState();
             
-            trEndEff = eye(4);
-            trEndEff(13) = transEndEff(1);
-            trEndEff(14) = transEndEff(2);
-            trEndEff(15) = transEndEff(3);
+            %trEndEff = eye(4);
+            %trEndEff(13) = transEndEff(1);
+            %trEndEff(14) = transEndEff(2);
+            %trEndEff(15) = transEndEff(3);
             
             % Transform for Camera to AR Tag at base - assuming 0 is the base AR Tag
             %offset of the tag to the base in m
-            offset = [0.1, 0.1, 0.1];
+            %offset = [0.1, 0.1, 0.1];
             
-            transCamDobotBase = [tagMsg.Poses(1).Position.X, tagMsg.Poses(1).Position.Y,...
-                tagMsg.Poses(1).Position.Z]
-            rotCamDobotBase = quat2rotm([tagMsg.Poses(1).Orientation.W, ...
-                tagMsg.Poses(1).Orientation.X, ...
-                tagMsg.Poses(1).Orientation.Y, ...
-                tagMsg.Poses(1).Orientation.Z]);
+            %transCamDobotBase = [tagMsg.Poses(1).Position.X, tagMsg.Poses(1).Position.Y,...
+            %    tagMsg.Poses(1).Position.Z]
+            %rotCamDobotBase = quat2rotm([tagMsg.Poses(1).Orientation.W, ...
+            %    tagMsg.Poses(1).Orientation.X, ...
+            %    tagMsg.Poses(1).Orientation.Y, ...
+            %    tagMsg.Poses(1).Orientation.Z]);
             
-            trCamDobotBase = rt2tr(rotCamDobotBase, transCamDobotBase');
-            trCamEndEff = trCamDobotBase * trEndEff;
+            %trCamDobotBase = rt2tr(rotCamDobotBase, transCamDobotBase');
+            %trCamEndEff = trCamDobotBase * trEndEff;
             
             % Transform for Camera to Object - assuming 1 is object AR Tag
             % cell array for ar tag transforms
-            ARTagPoses = cell(size(tagMsg.Poses,2),1);
-            for i = 2:1:size(tagMsg.Poses)
-                trans_cam_object = [tagMsg.Poses(i).Position.X, tagMsg.Poses(i).Position.Y,...
-                    tagMsg.Poses(i).Position.Z]
-                rot_cam_object = quat2rotm([tagMsg.Poses(i).Orientation.W, ...
-                    tagMsg.Poses(i).Orientation.X, ...
-                    tagMsg.Poses(i).Orientation.Y, ...
-                    tagMsg.Poses(i).Orientation.Z]);
-                ARTagPoses{i} = rt2tr(rot_cam_object, trans_cam_object');
-            end
+            %ARTagPoses = cell(size(tagMsg.Poses,2),1);
+            %for i = 2:1:size(tagMsg.Poses)
+            %    trans_cam_object = [tagMsg.Poses(i).Position.X, tagMsg.Poses(i).Position.Y,...
+            %        tagMsg.Poses(i).Position.Z]
+            %    rot_cam_object = quat2rotm([tagMsg.Poses(i).Orientation.W, ...
+            %        tagMsg.Poses(i).Orientation.X, ...
+            %        tagMsg.Poses(i).Orientation.Y, ...
+            %        tagMsg.Poses(i).Orientation.Z]);
+            %    ARTagPoses{i} = rt2tr(rot_cam_object, trans_cam_object');
+            %end
             
             % Calculate transforms relative to the robot end eff.
             % Rack 1 is tag 1->6, Rack 2 is tag 7->12
@@ -360,28 +360,76 @@ classdef DobotControl < handle
             %new function based on two ar tags on the end of the test tube
             %rack
             
+            
+            
+            
+            ARTagSub = rossubscriber('/tags','geometry_msgs/PoseArray');
+            tagMsg = receive(ARTagSub);
+
+            %tag5 = tagMsg.Poses(1);
+            %tag15 = tagMsg.Poses(11);
+
+            %tag 0
+            tag0Pose = tagMsg.Poses(1);
+            tag0Position = tag0Pose.Position;
+            tag0Orientation = tag0Pose.Orientation;
+            tag0RotMatrix = quat2rotm([tag0Orientation.X tag0Orientation.Y tag0Orientation.Z tag0Orientation.W]);
+            tag0HomMatrix = tag0RotMatrix;
+            tag0HomMatrix(1,4) = tag0Position.X;
+            tag0HomMatrix(2,4) = tag0Position.Y;
+            tag0HomMatrix(3,4) = tag0Position.Z;
+            tag0HomMatrix(4,4) = 1
+
+            %tag 3
+            tag3Pose = tagMsg.Poses(2);
+            tag3Position = tag3Pose.Position;
+            tag3Orientation = tag3Pose.Orientation;
+            tag3RotMatrix = quat2rotm([tag3Orientation.X tag3Orientation.Y tag3Orientation.Z tag3Orientation.W]);
+            tag3HomMatrix = tag3RotMatrix;
+            tag3HomMatrix(1,4) = tag3Position.X;
+            tag3HomMatrix(2,4) = tag3Position.Y;
+            tag3HomMatrix(3,4) = tag3Position.Z;
+            tag3HomMatrix(4,4) = 1
+
+            %tag 4
+            tag4Pose = tagMsg.Poses(3);
+            tag4Position = tag4Pose.Position;
+            tag4Orientation = tag4Pose.Orientation;
+            tag4RotMatrix = quat2rotm([tag4Orientation.X tag4Orientation.Y tag4Orientation.Z tag4Orientation.W]);
+            tag4HomMatrix = tag4RotMatrix;
+            tag4HomMatrix(1,4) = tag4Position.X;
+            tag4HomMatrix(2,4) = tag4Position.Y;
+            tag4HomMatrix(3,4) = tag4Position.Z;
+            tag4HomMatrix(4,4) = 1
+
+            %relativeTr = tag5HomMatrix\tag15HomMatrix %same as inv(5)*15
+
+            relativeTr0To3 = inv(tag0HomMatrix)*tag3HomMatrix
+            relativeTr0To4 = inv(tag0HomMatrix)*tag4HomMatrix
+            
             %distance from the tag to the first test tube
-            offset = 0.1;
+            offset = [0.1, 0.1, 0.1];
             
             %poses of the two tags
-            tag1 = ARTagPoses{2};
-            tag2 = ARTagPoses{3};
+            tag3 = relativeTr0To3 + transl(offset);
+            tag4 = relativeTr0To4 + transl(offset);
             
             %spacing between test tubes
-            xDiff = (tag1(1,4) - tag2(1,4))/12
-            yDiff = (tag1(2,4) - tag2(2,4))/12
+            xDiff = (tag3(1,4) - tag4(1,4))/12
+            yDiff = (tag3(2,4) - tag4(2,4))/12
             
             z = 0.07;
             
             for i = 1:1:12
                 if i < 7
-                    x = tag1(1,4) + xDiff*i;
-                    y = tag1(2,4) + yDiff*i;
+                    x = tag3(1,4) + xDiff*i;
+                    y = tag3(2,4) + yDiff*i;
                     self.rack1Pos{i} = [x, y, z]
-                else
-                    x = tag1(1,4) + xDiff*i;
-                    y = tag1(2,4) + yDiff*i;
+                else if i > 7
+                    x = tag3(1,4) + xDiff*i;
+                    y = tag3(2,4) + yDiff*i;
                     self.rack2Pos{i} = [x, y, z]
+                    end
                 end
             end
                     
