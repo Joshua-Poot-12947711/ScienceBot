@@ -17,9 +17,11 @@ classdef DobotControl < handle
         %% To Add
         % Calibrate Racks
         
-        % Test Estop
+        % Add resume to Estop
         % Rack update ting
-        % Fix compressor brr
+        % Test compressor brr
+        
+        % Work out which buttons
         
         
         %% Constructor
@@ -42,9 +44,6 @@ classdef DobotControl < handle
             elseif self.eStopped == 1
                 self.eStopped = 0;
             end
-            
-            
-            
         end
         
         %% Resume
@@ -54,18 +53,10 @@ classdef DobotControl < handle
             
         end
         
-        %% Gripper
-        function OpenGripperDobot(self)
-            self.dobot.PublishGripperState(1, 0);
-        end
-        
-        %% Gripper
-        function CloseGripperDobot(self)
-            self.dobot.PublishGripperState(1, 1);
-        end
-        
         %% Compressor Off
         function CompressorOff(self)
+            disp(self.dobot.GetCompressorState());
+            
             self.dobot.PublishGripperState(0, 0);
         end
         
@@ -112,6 +103,34 @@ classdef DobotControl < handle
             end
             
             self.MoveToJointState(targetJointState);
+        end
+        
+        %% Joy Stick Based Jogging
+        function JogJoyStick(self)
+            
+            joy = vrjoystick(1);
+            joy_info = caps(joy);
+            timeIncrement = 0.05;
+            maxSpeed = 0.05;
+
+            while(1)
+                [axes, buttons, povs] = read(joy);
+                
+                xJValue = axes(i);
+                yJValue = axes(i);
+                zJValue = buttons(i);
+                
+                endEffector = self.GetEndEffectorPosition;
+                
+                targetEndEffector(1) = endEffector(1) + (xJValue * timeIncrement);
+                targetEndEffector(2) = endEffector(2) + (yJValue * timeIncrement);
+                targetEndEffector(3) = endEffector(3) + (zJValue * timeIncrement);
+                
+                self.MoveToCartesianPoint(targetEndEffector);
+                
+                pause(timeIncrement);
+                
+            end
         end
         
         %% Move to Cartesian Point
