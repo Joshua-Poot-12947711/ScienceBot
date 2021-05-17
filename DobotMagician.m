@@ -34,6 +34,7 @@ classdef DobotMagician < handle
        eMotorMsg;
        
        safetyStatusSubscriber;
+       toolStateSubscriber;
    end
    
    properties(Access = private)
