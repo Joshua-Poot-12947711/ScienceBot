@@ -151,7 +151,7 @@ classdef DobotControl < handle
             
             state = 0;
             counter = 0;
-            pastEndEffectors{};
+            %pastEndEffectors{};
             endEffectorRotation = [0,0,0];
             
             while state == 0
@@ -163,7 +163,7 @@ classdef DobotControl < handle
                 
                 if self.eStopped == 0 %&& self.resumed == 1
                     currentEndEffector = self.dobot.GetCurrentEndEffectorState();
-                    pastEndEffectors{length(pastEndEffectors) + 1} = currentEndEffector;
+                    %pastEndEffectors{length(pastEndEffectors) + 1} = currentEndEffector;
                     
                     self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
                     
