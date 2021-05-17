@@ -22,12 +22,15 @@ classdef DobotSimulation < handle
            end
            
            %% Get Dobot Parameters and create seriallink
-           function getDobot()
+           function getDobot(Static)
+               
+               name = getstr(now, 'yyyy');
+               
                L1 = Link('d',0,'a',0.057,'alpha',0,'offset',0,'qlim',[deg2rad(-135),deg2rad(135)]);
-               L2 = Link('d',0,'a',0,'alpha',0,'offset',-pi/2,'qlim',[deg2rad(5),deg2rad(80)]);
-               L3 = Link('d',0,'a',0,'alpha',0,'offset',0,'qlim',[deg2rad(15),deg2rad(170)]);
+               L2 = Link('d',0,'a',0.135,'alpha',0,'offset',-pi/2,'qlim',[deg2rad(5),deg2rad(80)]);
+               L3 = Link('d',0,'a',0.147,'alpha',0,'offset',0,'qlim',[deg2rad(15),deg2rad(170)]);
                L4 = Link('d',0,'a',0,'alpha',0,'offset',-pi/2,'qlim',[pi/2,pi/2]);
-               L5 = Link('d',0,'a',0,'alpha',0,'offset',-pi/2,'qlim',[deg2rad(--85),deg2rad(85)]);
+               L5 = Link('d',0,'a',0,'alpha',0,'offset',-pi/2,'qlim',[deg2rad(-85),deg2rad(85)]);
                
                self.model = SerialLink([L1 L2 L3 L4 L5], 'name', name);
            end

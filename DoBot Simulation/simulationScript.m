@@ -6,8 +6,8 @@ clear all
 %% Load Environment, Robot and 'Light Screen'
 simEnvironment = DobotEnvironment();
 simEnvironment.loadEnvironmentObjects();
-% lightScreen = simEnvironment.generateLightScreen([],[]);
-%%
+[vertex,faces,faceNormals] = simEnvironment.generateLightScreen([0.21, -0.8, 2.5],[0.2, 0.8, 1.1]);
+
 dobot = DobotSimulation();
 dobot.model.base = dobot.model.base * transl(-0.75, 0, 1.05);
 dobot.model.animate(dobot.model.getpos);
