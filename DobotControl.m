@@ -121,14 +121,14 @@ classdef DobotControl < handle
             id = 1;
             joy = vrjoystick(id);
             joy_info = caps(joy);
-            timeIncrement = 0.2;
-            maxSpeed = 0.01
+            timeIncrement = 0.05;
+            maxSpeed = 0.01;
             
             while(self.joyStick == 1)
                 [axes, buttons, povs] = read(joy);
                 
                 xJValue = (axes(2) * -1) * maxSpeed;
-                yJValue = axes(1) * maxSpeed;
+                yJValue = (axes(1) * -1) * maxSpeed;
                 zJValue = (axes(5) * -1) * maxSpeed;
                 
                 endEffector = self.GetEndEffectorPosition;
@@ -136,8 +136,6 @@ classdef DobotControl < handle
                 targetEndEffector(1) = endEffector(1) + xJValue;
                 targetEndEffector(2) = endEffector(2) + yJValue;
                 targetEndEffector(3) = endEffector(3) + zJValue;
-                
-                disp(targetEndEffector);
                 
                 self.MoveToCartesianPoint(targetEndEffector);
                 
@@ -173,9 +171,9 @@ classdef DobotControl < handle
                         state = 1;
                     end
                     
-                    if 
+                    %if 
                     
-                    pause(0.3);
+                    pause(0.01);
                 end
 
             end
@@ -225,8 +223,6 @@ classdef DobotControl < handle
         %% Set Joy Stick Mode
         function SetJoyStick(self, state)
             self.joyStick = state;
-            
-            disp(self.joyStick);
             
             if self.joyStick == 1
                 self.JogJoyStick();
