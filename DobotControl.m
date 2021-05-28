@@ -1,27 +1,22 @@
 classdef DobotControl < handle
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
     
     properties
         dobot;
         rackState = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         
-        rack1Pos = {[0.14, 0.13, 0.07], [0.14, 0.104, 0.07], [0.14, 0.075, 0.07], [0.14, 0.055, 0.07], [0.14, 0.035, 0.07], [0.14, 0.015, 0.07]};
-        rack2Pos = {[0.14, -0.005, 0.07], [0.14, -0.025, 0.07], [0.14, -0.045, 0.07], [0.14, -0.064, 0.07], [0.14, -0.09, 0.07], [0.14, -0.12, 0.07]};
+        % Positions used for testing
+        %rack1Pos = {[0.14, 0.13, 0.07], [0.14, 0.104, 0.07], [0.14, 0.075, 0.07], [0.14, 0.055, 0.07], [0.14, 0.035, 0.07], [0.14, 0.015, 0.07]};
+        %rack2Pos = {[0.14, -0.005, 0.07], [0.14, -0.025, 0.07], [0.14, -0.045, 0.07], [0.14, -0.064, 0.07], [0.14, -0.09, 0.07], [0.14, -0.12, 0.07]};
+        
+        rack1Pos = {[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]};
+        rack2Pos = {[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]};
         
         eStopped = 0;
         resumed = 1;
         joyStick = 0;
     end
     
-    methods
-        %% To Add
-        % Calibrate Racks
-        
-        % Add resume to Estop
-        % Rack update ting
-        % Test compressor brr      
-        
+    methods  
         %% Constructor
         function self = DobotControl()
             self.dobot = DobotMagician();
@@ -46,9 +41,7 @@ classdef DobotControl < handle
         
         %% Resume
         function ResumeDobot(self)
-            
             self.resumed = 1;
-            
         end
         
         %% Compressor Off
@@ -148,20 +141,16 @@ classdef DobotControl < handle
         function MoveToCartesianPoint(self, targetEndEffector)
             
             state = 0;
-            counter = 0;
-            %pastEndEffectors{};
             endEffectorRotation = [0,0,0];
             
             while state == 0
                 
-                if self.eStopped == 1 %&& self.resumed == 0
-                    pause(0.3);
+                if self.eStopped == 1
+                    pause(0.1);
                 end
                 
-                
-                if self.eStopped == 0 %&& self.resumed == 1
+                if self.eStopped == 0
                     currentEndEffector = self.dobot.GetCurrentEndEffectorState();
-                    %pastEndEffectors{length(pastEndEffectors) + 1} = currentEndEffector;
                     
                     self.dobot.PublishEndEffectorPose(targetEndEffector, endEffectorRotation);
                     
@@ -171,13 +160,9 @@ classdef DobotControl < handle
                         state = 1;
                     end
                     
-                    %if 
-                    
                     pause(0.01);
                 end
-
             end
-            
         end
         
         %% Move to Joint State
@@ -306,94 +291,9 @@ classdef DobotControl < handle
         
         %% Calibrates Tube Positions
         function CalibrateTestTubePositions(self)
-            %% Calibrating the camera
-            % setting the folder the images are in. Make sure the current folder in matlab is the folder before the folder below.
-            %imageFolder = './CalibrationImages';
-            
-            % Square Size is the size of each square on the checkerboard in mm
-            %squareSize = 30;
-            % converting square size to m
-            %squareSize = squareSize/1000;
-            
-            % get the file path for the calibration images
-            %imageArray = dir(imageFolder);
-            %imageArray = {imageArray(~[imageArray.isdir]).name};
-            %for i = 1:length(imageArray)
-            %    imageArray{i} = [imageFolder filesep imageArray{i}];
-            %end
-            
-            % find checkerboard points
-            %[points, boardSize, imagesUsed] = detectCheckerboardPoints(imageArray);
-            %if(imagesUsed == 0)
-            %    error("No calibration images are found in the folder CalibrationImages");
-            %end
-            
-            % generate an ideal checkerboard to compare calibration images with
-            %worldPoints = generateCheckerboardPoints(boardSize, squareSize);
-            
-            % find camera parameters
-            %cameraParams = estimateCameraParameters(points, worldPoints, 'WorldUnits', 'm', 'NumRadialDistortionCoefficients', 2, ...
-            %    'EstimateTangentialDistortion', true);
-            %% Getting AR Tag poses and put them into class variables
-            %get ar tag information from ar_track_alvar_msgs/AlvarMarkers
-            %ARTagSub = rossubscriber('/tags','geometry_msgs/PoseArray');
-            %tagMsg = receive(ARTagSub);
-            %transEndEff = self.dobot.GetCurrentEndEffectorState();
-            
-            %trEndEff = eye(4);
-            %trEndEff(13) = transEndEff(1);
-            %trEndEff(14) = transEndEff(2);
-            %trEndEff(15) = transEndEff(3);
-            
-            % Transform for Camera to AR Tag at base - assuming 0 is the base AR Tag
-            %offset of the tag to the base in m
-            %offset = [0.1, 0.1, 0.1];
-            
-            %transCamDobotBase = [tagMsg.Poses(1).Position.X, tagMsg.Poses(1).Position.Y,...
-            %    tagMsg.Poses(1).Position.Z]
-            %rotCamDobotBase = quat2rotm([tagMsg.Poses(1).Orientation.W, ...
-            %    tagMsg.Poses(1).Orientation.X, ...
-            %    tagMsg.Poses(1).Orientation.Y, ...
-            %    tagMsg.Poses(1).Orientation.Z]);
-            
-            %trCamDobotBase = rt2tr(rotCamDobotBase, transCamDobotBase');
-            %trCamEndEff = trCamDobotBase * trEndEff;
-            
-            % Transform for Camera to Object - assuming 1 is object AR Tag
-            % cell array for ar tag transforms
-            %ARTagPoses = cell(size(tagMsg.Poses,2),1);
-            %for i = 2:1:size(tagMsg.Poses)
-            %    trans_cam_object = [tagMsg.Poses(i).Position.X, tagMsg.Poses(i).Position.Y,...
-            %        tagMsg.Poses(i).Position.Z]
-            %    rot_cam_object = quat2rotm([tagMsg.Poses(i).Orientation.W, ...
-            %        tagMsg.Poses(i).Orientation.X, ...
-            %        tagMsg.Poses(i).Orientation.Y, ...
-            %        tagMsg.Poses(i).Orientation.Z]);
-            %    ARTagPoses{i} = rt2tr(rot_cam_object, trans_cam_object');
-            %end
-            
-            % Calculate transforms relative to the robot end eff.
-            % Rack 1 is tag 1->6, Rack 2 is tag 7->12
-            %for i = 1:1:6
-            %    relativeTr = inv(ARTagPoses{i})*trCamEndEff;
-            %   self.rack1Pos{i} = [relativeTr(13), relativeTr(14), relativeTr(15)];
-            %end
-            %for i = 7:1:12
-            %    relativeTr = inv(ARTagPoses{i})*trCamEndEff;
-            %    self.rack2Pos{i} = [relativeTr(13), relativeTr(14), relativeTr(15)];
-            %end
-            
-            %new function based on two ar tags on the end of the test tube
-            %rack
-            
-            
-            
             
             ARTagSub = rossubscriber('/tags','geometry_msgs/PoseArray');
             tagMsg = receive(ARTagSub);
-
-            %tag5 = tagMsg.Poses(1);
-            %tag15 = tagMsg.Poses(11);
 
             %tag 0
             tag0Pose = tagMsg.Poses(1);
@@ -458,21 +358,7 @@ classdef DobotControl < handle
                     end
                 end
             end
-                    
-            
-            
-    
         end
-        
-        %% Function
-        %         %% Function
-        %         function outputArg = method1(obj,inputArg)
-        %             %METHOD1 Summary of this method goes here
-        %             %   Detailed explanation goes here
-        %             outputArg = obj.Property1 + inputArg;
-        %         end
-        
-        
     end
 end
 
